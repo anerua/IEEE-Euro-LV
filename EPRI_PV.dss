@@ -1,0 +1,35 @@
+clear
+
+New Circuit.PVCircuit basekV=.416 pu=1 MVAsc3=.25 MVAsc1=.25
+
+// P-T curve
+New XYCurve.MyPvsT npts=4 xarray=[0 25 75 100] yarray=[1.2 1.0 0.8 0.6]
+
+// Efficiency curve
+New XYCurve.MyEff npts=4 xarray=[.1 .2 .4 1.0] yarray=[.86 .9 .93 .97]
+
+// Irradiation shape
+New Loadshape.MyIrrad npts=24 interval=1 mult=[0 0 0 0 0 0 .1 .2 .3 .5 .8 .9 1.0 1.0 .99 .9 .7 .4 .1 0 0 0 0 0]
+
+// Temperature values
+New Tshape.MyTemp npts=24 interval=1 temp=[25 25 25 25 25 25 25 25 35 40 45 50 60 60 55 40 35 30 25 25 25 25 25 25]
+
+New PVSystem.PV phases=1 kV=.24 kVA=25 Pmpp=25 bus1=SourceBus irrad=0.8
+~ temperature=25 P-TCurve=MyPvsT effcurve=MyEff PF=1
+~ Daily=MyIrrad TDaily=MyTemp
+
+//New Line.GenLine phases=3 bus1=SourceBus bus2=LoadBus
+//New Line.PVLine phases=3 bus1=PVBus bus2=LoadBus
+
+New Load.SampleLoad phases=1 kV=.24 kW=30 pf=1 bus1=SourceBus
+
+//Open object=Line.GenLine term=1
+
+Set Voltagebases=[.416]
+Calcvoltagebases
+
+solve
+
+//set mode=yearly number=1440 stepsize=1m
+
+//solve

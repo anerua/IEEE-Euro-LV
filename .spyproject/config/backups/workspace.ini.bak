@@ -1,0 +1,10 @@
+[workspace]
+restore_data_on_startup = True
+save_data_on_exit = True
+save_history = True
+save_non_project_files = False
+
+[main]
+version = 0.2.0
+recent_files = ['OpenDSS_Controller', '../../../../../../../../../../../../home/martins/anaconda3/lib/python3.7/site-packages/dss/dss_capi_gr/IDSS.py', '../../../../../../../../../../../../home/martins/anaconda3/lib/python3.7/site-packages/dss/dss_capi_gr/ICircuit.py', '../../../../../../../../../../../../home/martins/anaconda3/lib/python3.7/site-packages/dss/dss_capi_gr/IMeters.py', '../../../../../../../../../../../../home/martins/anaconda3/lib/python3.7/site-packages/dss/_cffi_api_util.py']
+

@@ -1,0 +1,101 @@
+// ------------------------------------------------------------------------------------------------------------------------------------//
+// ------------------------------------------------------------------------------------------------------------------------------------//
+// This script is based on the IEEE European LV Test case
+// ------------------------------------------------------------------------------------------------------------------------------------//
+// ------------------------------------------------------------------------------------------------------------------------------------//
+
+clear
+
+Set DefaultBaseFrequency=50
+
+New circuit.LVTest 
+Edit Vsource.Source BasekV=11 pu=1.05  ISC3=3000  ISC1=5
+
+// ------------------------------------------------------------------------------------------------------------------------------------//
+// LineCodes
+// ------------------------------------------------------------------------------------------------------------------------------------//
+
+New LineCode.2c_.007 nphases=3 R1=3.97 X1=0.099 R0=3.97 X0=0.099 C1=0 C0=0 Units=km 
+New LineCode.2c_.0225 nphases=3 R1=1.257 X1=0.085 R0=1.257 X0=0.085 C1=0 C0=0 Units=km 
+New LineCode.2c_16 nphases=3 R1=1.15 X1=0.088 R0=1.2 X0=0.088 C1=0 C0=0 Units=km 
+New LineCode.35_SAC_XSC nphases=3 R1=0.868 X1=0.092 R0=0.76 X0=0.092 C1=0 C0=0 Units=km 
+New LineCode.4c_.06 nphases=3 R1=0.469 X1=0.075 R0=1.581 X0=0.091 C1=0 C0=0 Units=km 
+New LineCode.4c_.1 nphases=3 R1=0.274 X1=0.073 R0=0.959 X0=0.079 C1=0 C0=0 Units=km 
+New LineCode.4c_.35 nphases=3 R1=0.089 X1=0.0675 R0=0.319 X0=0.076 C1=0 C0=0 Units=km 
+New LineCode.4c_185 nphases=3 R1=0.166 X1=0.068 R0=0.58 X0=0.078 C1=0 C0=0 Units=km 
+New LineCode.4c_70 nphases=3 R1=0.446 X1=0.071 R0=1.505 X0=0.083 C1=0 C0=0 Units=km 
+New LineCode.4c_95_SAC_XC nphases=3 R1=0.322 X1=0.074 R0=0.804 X0=0.093 C1=0 C0=0 Units=km
+
+// ------------------------------------------------------------------------------------------------------------------------------------//
+// Lines
+// ------------------------------------------------------------------------------------------------------------------------------------//
+
+Redirect Lines.txt
+
+Redirect LoadShapes.txt
+batchedit loadshape..* useactual=no
+
+// ------------------------------------------------------------------------------------------------------------------------------------//
+// Transformer
+// ------------------------------------------------------------------------------------------------------------------------------------//
+New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.416] kVAs=[100 100] XHL=4 sub=y
+
+// ------------------------------------------------------------------------------------------------------------------------------------//
+// Loads
+// ------------------------------------------------------------------------------------------------------------------------------------//
+
+Redirect Loads.txt
+
+Redirect EnergyMeters.txt
+
+!New Monitor.load1_monitor element=Load.LOAD1 terminal=1 mode=1 ppolar=no
+
+Set voltagebases=[11  .416]
+Calcvoltagebases
+
+//buscoords buscoords.txt
+solve
+
+set mode=yearly number=1440 stepsize=1m    ! one day simulation
+
+! Set "DemandInterval" to true so that energy quantities recorded by energy meters are recorded for 
+! each time step and set "casename" to define a directory under default directory in which all of the 
+! demand interval data is recorded.  (NOTE: Setting Demand=true resets all energymeters.)
+
+//set demand=true          ! demand interval ON
+//set DIVerbose=true       ! verbose mode is ON
+
+Set Year=1        ! This statement resets all meters
+solve 
+
+closedi     ! close demand interval files at end of run
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
