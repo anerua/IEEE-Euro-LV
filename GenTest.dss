@@ -1,0 +1,21 @@
+clear
+
+New Circuit.GenCircuit basekV=.416 pu=1
+
+New Generator.Gen phases=3 kV=.416 kW=25 pf=1 bus1=GenBus model=1
+
+New Line.CirLine phases=3 bus1=SourceBus bus2=LoadBus
+New Line.GenLine phases=3 bus1=GenBus bus2=LoadBus
+
+New Load.SampleLoad phases=1 kV=.24 kW=20 pf=1 bus1=LoadBus
+
+Open object=Line.CirLine term=1
+
+Set Voltagebases=[.416]
+Calcvoltagebases
+
+solve
+
+//set mode=yearly number=1440 stepsize=1m
+
+//solve
