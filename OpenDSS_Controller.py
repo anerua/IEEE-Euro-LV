@@ -11,7 +11,7 @@ import dss
 
 BASE = '/mnt/6840331B4032F004/Users/MARTINS/Documents/Texts/Acad/OAU/Part 5/Rain Semester/EEE502 - Final Year Project II/Work/IEEE Euro LV/Master.dss'
 CIRCUIT = 0  # OpenDSS Circuit
-TEXT = 0  # Text command
+TEXT = 0  # Text commandz
 ENG = 0  # DSS COM Engine
 
 def start():

@@ -1,8 +1,9 @@
 clear
 
-New Circuit.ISourceCircuit basekV=.416 pu=1
+New Circuit.SourceCircuit
+Edit VSource.Source basekV=.416 pu=1
 
-New VSource.PVGen phases=1 bus1=PVGenBus basekV=.24
+New VSource.PVGen phases=3 bus1=SourceBus basekV=.416
 //New Generator.Gen1 phases=1 bus1=PVGenBus kV=.24 kW=50 pf=1
 
 // P-T curve
@@ -13,27 +14,37 @@ New XYCurve.MyEff npts=4 xarray=[.1 .2 .4 1.0] yarray=[.86 .9 .93 .97]
 
 // Irradiation shape
 New Loadshape.MyIrrad npts=24 interval=1 mult=[0 0 0 0 0 0 .1 .2 .3 .5 .8 .9 1.0 1.0 .99 .9 .7 .4 .1 0 0 0 0 0]
+//mult=[1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 0.22]
 
 // Temperature values
 New Tshape.MyTemp npts=24 interval=1 temp=[25 25 25 25 25 25 25 25 35 40 45 50 60 60 55 40 35 30 25 25 25 25 25 25]
 
-New PVSystem.PV phases=1 kV=.24 kVA=25 Pmpp=25 bus1=PVGenBus irrad=0.8
+New PVSystem.PV3 phases=3 kV=.416 kVA=200 Pmpp=200 bus1=SourceBus irrad=1.0
 ~ temperature=25 P-TCurve=MyPvsT effcurve=MyEff PF=1
 ~ Daily=MyIrrad TDaily=MyTemp
 
-New Line.CirLine phases=3 bus1=SourceBus bus2=MiddleBus
-New Line.Cir2Line phases=3 bus1=MiddleBus bus2=LoadBus
-New Line.PVGenLine phases=3 bus1=PVGenBus bus2=LoadBus
+// Storage shape
+New Loadshape.BatteryShape npts=24 interval=1 mult=[1 1 1 1 1 1 1 1 1 -1 -1 -1 -1 -1 -1 -1 -1 0 0 0 0 0 0 0]
 
-New Load.SampleLoad phases=1 kV=.24 kW=20 pf=1 bus1=LoadBus
+New Storage.Battery phases=3 bus1=SourceBus kV=.416 kwrated=30 kwhrated=400 dispmode=follow daily=BatteryShape
 
-Open object=Line.Cir2Line term=1
+//New Line.CirLine phases=3 bus1=SourceBus bus2=MiddleBus
+//New Line.Cir2Line phases=3 bus1=MiddleBus bus2=LoadBus
+//New Line.PVGenLine phases=3 bus1=PVGenBus bus2=LoadBus
+
+New Load.SampleLoad phases=1 kV=.24 kW=10 pf=1 bus1=SourceBus
+
+New Monitor.PV_Power element=PVSystem.PV3 terminal=1 mode=1 ppolar=no
+New Monitor.Battery_Power element=Storage.Battery terminal=1 mode=1 ppolar=no
+New Monitor.VSource_Power element=VSource.PVGen terminal=1 mode=1 ppolar=no
+
+Open VSource.Source
 
 Set Voltagebases=[.416]
 Calcvoltagebases
 
-//solve
+solve
 
-set mode=yearly number=1440 stepsize=1m
+set mode=yearly number=24 stepsize=1h
 
 solve

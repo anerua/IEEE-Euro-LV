@@ -1,6 +1,6 @@
 // ------------------------------------------------------------------------------------------------------------------------------------//
 // ------------------------------------------------------------------------------------------------------------------------------------//
-// This script is based on the IEEE European LV Test case
+// This script is based on the IEEE European LV Test case_906 buses
 // ------------------------------------------------------------------------------------------------------------------------------------//
 // ------------------------------------------------------------------------------------------------------------------------------------//
 
@@ -62,14 +62,14 @@ Calcvoltagebases
 //buscoords buscoords.txt
 
 New Monitor.PV_Power element=PVSystem.PV terminal=1 mode=1 ppolar=no
-New Monitor.Battery_Power element=Storage.Battery terminal=1 mode=1 ppolar=no
+//New Monitor.Battery_Power element=Storage.Battery terminal=1 mode=1 ppolar=no
 New Monitor.VSource_Power element=VSource.PVGen terminal=1 mode=1 ppolar=no
 
-Open VSource.Source
+//!Open VSource.Source
 
-solve
+//!solve
 
-set mode=yearly number=1440 stepsize=1m    ! one day simulation
+//!set mode=yearly number=1440 stepsize=1m    ! one day simulation
 
 ! Set "DemandInterval" to true so that energy quantities recorded by energy meters are recorded for 
 ! each time step and set "casename" to define a directory under default directory in which all of the 
@@ -78,10 +78,10 @@ set mode=yearly number=1440 stepsize=1m    ! one day simulation
 //set demand=true          ! demand interval ON
 //set DIVerbose=true       ! verbose mode is ON
 
-Set Year=1        ! This statement resets all meters
-solve 
+//!Set Year=1        ! This statement resets all meters
+//!solve 
 
-closedi     ! close demand interval files at end of run
+//!closedi     ! close demand interval files at end of run
 
 
 

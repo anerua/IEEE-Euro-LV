@@ -1,7 +1,3 @@
-clear
-
-New Circuit.PVCircuit basekV=.416 pu=1 MVAsc3=.25 MVAsc1=.25
-
 // P-T curve
 New XYCurve.MyPvsT npts=4 xarray=[0 25 75 100] yarray=[1.2 1.0 0.8 0.6]
 
@@ -14,22 +10,15 @@ New Loadshape.MyIrrad npts=24 interval=1 mult=[0 0 0 0 0 0 .1 .2 .3 .5 .8 .9 1.0
 // Temperature values
 New Tshape.MyTemp npts=24 interval=1 temp=[25 25 25 25 25 25 25 25 35 40 45 50 60 60 55 40 35 30 25 25 25 25 25 25]
 
-New PVSystem.PV phases=1 kV=.24 kVA=25 Pmpp=25 bus1=SourceBus irrad=0.8
-~ temperature=25 P-TCurve=MyPvsT effcurve=MyEff PF=1
+New PVSystem.PV phases=3 kV=.416 kVA=400 Pmpp=400 bus1=BackupBus irrad=1
+~ temperature=25 P-TCurve=MyPvsT effcurve=MyEff PF=.95
 ~ Daily=MyIrrad TDaily=MyTemp
 
-//New Line.GenLine phases=3 bus1=SourceBus bus2=LoadBus
-//New Line.PVLine phases=3 bus1=PVBus bus2=LoadBus
+New VSource.PVGen phases=3 bus1=BackupBus basekV=.416
 
-New Load.SampleLoad phases=1 kV=.24 kW=30 pf=1 bus1=SourceBus
+// Storage
+//New Loadshape.BatteryShape npts=24 interval=1 mult=[0.1 0.8 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.0 0.9 0.8 0.7 0.6 0.5 0.4 0.3 0.7 0.1 0.8 0.3 0.4 0.5]
 
-//Open object=Line.GenLine term=1
+//New Storage.Battery phases=3 bus1=BackupBus kV=.416 kwrated=100 kwhrated=1000 pf=.95 daily=BatteryShape
 
-Set Voltagebases=[.416]
-Calcvoltagebases
-
-solve
-
-//set mode=yearly number=1440 stepsize=1m
-
-//solve
+New Line.BackupLine phases=3 bus1=BackupBus bus2=1
