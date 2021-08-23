@@ -15,10 +15,12 @@ SOLUTION = 0
 ACTIVE_ELEMENT = 0
 TEXT = 0  # Text command
 ENG = 0  # DSS COM Engine
-NUMBER_OF_DAYS = 1
+
+NUMBER_OF_DAYS = 7  # Number of days of simulation
 BACKUP_REQUEST = False
-POWER_OUT_HOUR = 1
-POWER_ON_HOUR = 23
+POWER_OUT_HOUR = 1  # Hour of day when grid supply goes off
+POWER_ON_HOUR = 23  # Hour of day when grid supply comes back on
+
 total_loadshape = []
 
 def start():
@@ -33,13 +35,12 @@ def start():
     ENG.AllowForms = False      # suppresses message forms from popping up during the execution of the user’s program
     
 def solution_iteration():
-    global total_loadshape
+    global PV_PMPP, total_loadshape
     
     total_loadshape = get_total_loadshape()
     TEXT.Command = f"New Loadshape.BatteryShape npts=1440 minterval=1 mult={total_loadshape}"
     TEXT.Command = "New Storage.Battery phases=3 bus1=BackupBus kV=.416 kwrated=100 kwhrated=400 pf=.95 daily=BatteryShape"
     
-    # TEXT.Command = "solve mode=snap"
     TEXT.Command = "set mode = yearly"
     TEXT.Command = "set Year = 1"
     SOLUTION.Number = 1
@@ -51,9 +52,20 @@ def solution_iteration():
     
     pv_name = "PVSystem.PV"
     CIRCUIT.SetActiveElement(pv_name)
-    pv_pmpp = int(ACTIVE_ELEMENT.Properties('Pmpp').Val)
+    PV_PMPP = int(ACTIVE_ELEMENT.Properties('Pmpp').Val)
     
-    while(present_step <= num_pts):
+    while(present_step < num_pts):
+        grid_response = grid_supply_control(present_step)
+        pv_response = pv_control(present_step)
+        
+        # Solve the circuit and get output pv then pass as arg to battery_control
+        SOLUTION.SolveSnap()
+        
+        CIRCUIT.SetActiveElement("PVSystem.PV")
+        pv_power = abs(ACTIVE_ELEMENT.Powers[0]) * 3
+        
+        battery_response = battery_control(present_step, pv_power)
+        
         SOLUTION.Solve()
         
         battery_name = "Storage.Battery"
@@ -61,20 +73,31 @@ def solution_iteration():
         ACTIVE_ELEMENT.Properties('DispMode').Val = "EXTERNAL"
         battery_stored = ACTIVE_ELEMENT.Properties('%stored').Val
         battery_kWh = ACTIVE_ELEMENT.Properties('kWhstored').Val
-        battery_state = ACTIVE_ELEMENT.Properties('state').Val
+        battery_power = ACTIVE_ELEMENT.Properties('kW').Val
         
-        if ((present_step % 60) == 0):
-            print("+----------------------------------")
-            print("| Day: " + str(((present_step//60)//24) + 1) + ", Hour: " + str((present_step//60) % 24))
-            print("+----------------------------------")
-            print(f"| Battery state: {battery_state}")
-            print(f"| Battery percent: {battery_stored} %")
-            print(f"| Battery energy left: {battery_kWh} kWh")
-            grid_supply_control(present_step//60)
-            pv_control(present_step//60)
-            battery_control((present_step//60), pv_pmpp)
-            print("+----------------------------------")
-            print()
+        day = ((present_step//60)//24) + 1
+        hour = (present_step//60) % 24
+        minute = present_step % 60
+        
+        present_load_demand = total_loadshape[present_step % 1440] * 100
+        
+        print("+----------------------------------")
+        print(f"| Day {day}, {hour:02d}:{minute:02d}")
+        print("+----------------------------------")
+        print(f"| Grid supply: {grid_response}")
+        print(f"| Backup supply: {pv_response}\n|")
+        
+        print(f"| PV output: {pv_power}\n|")
+        
+        print(f"| Battery state: {battery_response}")
+        print(f"| Battery percent: {battery_stored} %")
+        print(f"| Battery energy left: {battery_kWh} kWh")
+        print(f"| Battery power: {battery_power} kW\n|")
+        
+        print(f"| Total load demand: {present_load_demand} kW")
+        print("+----------------------------------")
+        print()
+        
         present_step += 1
         
     print("Done!")
@@ -98,69 +121,62 @@ def get_total_loadshape():
         total_loadshape.append(total)
     return total_loadshape.copy()
     
-
-def get_pv_loadshape():
-    pv_loadshape = CIRCUIT.LoadShapes
-    pv_loadshape.Name = "MyIrrad"
-    return pv_loadshape.Pmult
     
-    
-def battery_control(present_hour, pv_pmpp):
-    present_24hour = present_hour % 24    
-    CIRCUIT.SetActiveElement("PVSystem.PV")
-    pv_power = abs(ACTIVE_ELEMENT.Powers[0]) * 3
-    
+def battery_control(present_step, pv_power):
     CIRCUIT.SetActiveElement("Storage.Battery")
-    battery_power = str(ACTIVE_ELEMENT.Properties('kW').Val)
-    print(f"| Battery power: {battery_power} kW")
     
-    present_load_demand = total_loadshape[present_24hour * 60] * 100
-    
-    print(f"| PV power: {pv_power} kW")
-    print(f"| Total load demand: {present_load_demand} kW")
+    present_load_demand = total_loadshape[present_step % 1440] * 100
         
     if ((not BACKUP_REQUEST) and pv_power > 100) or (BACKUP_REQUEST and pv_power > (100 + present_load_demand)):
         ACTIVE_ELEMENT.Properties('DispMode').Val = "EXTERNAL"
         ACTIVE_ELEMENT.Properties('state').Val = 'CHARGING'
-        print("| Battery state changed to:", ACTIVE_ELEMENT.Properties('state').Val)
     elif BACKUP_REQUEST and (pv_power < present_load_demand):
         ACTIVE_ELEMENT.Properties('DispMode').Val = "FOLLOW"
         CIRCUIT.SetActiveElement("Storage.Battery")
-        print("| Battery state changed to:", ACTIVE_ELEMENT.Properties('state').Val)
     else:
         ACTIVE_ELEMENT.Properties('DispMode').Val = "EXTERNAL"
         ACTIVE_ELEMENT.Properties('state').Val = 'IDLING'
-        print("| Battery state changed to:", ACTIVE_ELEMENT.Properties('state').Val)
+        
+    return ACTIVE_ELEMENT.Properties('state').Val
 
 
-def pv_control(present_hour):
-    present_24hour = present_hour % 24
-    close_hour, open_hour = POWER_OUT_HOUR, POWER_ON_HOUR
+def pv_control(present_step):
     
-    if present_24hour == close_hour:
-        TEXT.Command = "Close Line.BackupLine"
-        print(f"| Closed BackupLine at {present_24hour} \n|")
-    elif present_24hour == open_hour:
-        TEXT.Command = "Open Line.BackupLine"
-        print(f"| Opened BackupLine at {present_24hour} \n|")
+    if (present_step % 60) == 0:
+        present_24hour = (present_step // 60) % 24
     
+        if present_24hour == POWER_OUT_HOUR:
+            TEXT.Command = "Close Line.BackupLine"
+            return "BACKUP ONLINE"
+        elif present_24hour == POWER_ON_HOUR:
+            TEXT.Command = "Open Line.BackupLine"
+            return "BACKUP OFFLINE"
+    
+    if BACKUP_REQUEST:
+        return "BACKUP ONLINE"
+    else:
+        return "BACKUP OFFLINE"
 
 
-def grid_supply_control(present_hour):
+def grid_supply_control(present_step):
     global BACKUP_REQUEST
     
-    present_24hour = present_hour % 24
-    open_hour, close_hour = POWER_OUT_HOUR, POWER_ON_HOUR
+    if (present_step % 60) == 0:
+        present_24hour = (present_step // 60) % 24
     
-    if present_24hour == open_hour:
-        TEXT.Command = "Open VSource.Source"
-        BACKUP_REQUEST = True
-        print(f"|\n| Opened VSource at {present_24hour}")
-    elif present_24hour == close_hour:
-        TEXT.Command = "Close VSource.Source"
-        print(f"|\n| Closed VSource at {present_24hour}")
-        BACKUP_REQUEST = False
+        if present_24hour == POWER_OUT_HOUR:
+            TEXT.Command = "Open VSource.Source"
+            BACKUP_REQUEST = True
+            return "POWER OUT"
+        elif present_24hour == POWER_ON_HOUR:
+            TEXT.Command = "Close VSource.Source"
+            BACKUP_REQUEST = False
+            return "POWER ON"
     
+    if BACKUP_REQUEST:
+        return "POWER OUT"
+    else:
+        return "POWER ON"
     
     
 start()
