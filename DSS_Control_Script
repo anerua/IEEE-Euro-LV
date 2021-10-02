@@ -16,11 +16,12 @@ ACTIVE_ELEMENT = 0
 TEXT = 0  # Text command
 ENG = 0  # DSS COM Engine
 
-NUMBER_OF_DAYS = 7  # Number of days of simulation
+NUMBER_OF_DAYS = 2  # Number of days of simulation
 BACKUP_REQUEST = False
 POWER_OUT_HOUR = 1  # Hour of day when grid supply goes off
 POWER_ON_HOUR = 23  # Hour of day when grid supply comes back on
 
+PV_PMPP = 0
 total_loadshape = []
 
 def start():
@@ -65,6 +66,8 @@ def solution_iteration():
         pv_power = abs(ACTIVE_ELEMENT.Powers[0]) * 3
         
         battery_response = battery_control(present_step, pv_power)
+        
+        price_function(pv_response, pv_power, battery_response)
         
         SOLUTION.Solve()
         
@@ -178,6 +181,28 @@ def grid_supply_control(present_step):
     else:
         return "POWER ON"
     
+    
+def price_function(pv_response, pv_power, battery_response):
+    
+    total_demand = 0
+    total_demand_min = 0
+    battery_max = 0 #maximum power battery can supply
+    price = 0
+    
+    if pv_response == "BACKUP ONLINE":
+        if pv_power == total_demand:
+            price = 1
+        elif pv_power > total_demand:
+            price = total_demand / pv_power
+        else:
+            alpha_min = total_demand_min / PV_PMPP
+            beta = total_demand / battery_max
+            price = (1 / alpha_min) + beta
+    else:
+        price = 1 # or whatever disco charges
+    
+    return price
+
     
 start()
 solution_iteration()
