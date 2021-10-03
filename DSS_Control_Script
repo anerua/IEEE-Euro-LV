@@ -67,7 +67,7 @@ def solution_iteration():
         
         battery_response = battery_control(present_step, pv_power)
         
-        price_function(pv_response, pv_power, battery_response)
+        price_mult = price_multiplier(pv_response, pv_power, battery_response)
         
         SOLUTION.Solve()
         
@@ -182,26 +182,26 @@ def grid_supply_control(present_step):
         return "POWER ON"
     
     
-def price_function(pv_response, pv_power, battery_response):
+def price_multiplier(pv_response, pv_power, battery_response):
     
     total_demand = 0
     total_demand_min = 0
     battery_max = 0 #maximum power battery can supply
-    price = 0
+    price_mult = 0
     
     if pv_response == "BACKUP ONLINE":
         if pv_power == total_demand:
-            price = 1
+            price_mult = 1
         elif pv_power > total_demand:
-            price = total_demand / pv_power
+            price_mult = pv_power / total_demand
         else:
             alpha_min = total_demand_min / PV_PMPP
             beta = total_demand / battery_max
-            price = (1 / alpha_min) + beta
+            price_mult = (1 / alpha_min) + beta
     else:
-        price = 1 # or whatever disco charges
+        price_mult = 1 # or whatever disco charges
     
-    return price
+    return price_mult
 
     
 start()
