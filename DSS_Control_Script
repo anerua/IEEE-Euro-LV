@@ -16,13 +16,14 @@ ACTIVE_ELEMENT = 0
 TEXT = 0  # Text command
 ENG = 0  # DSS COM Engine
 
-NUMBER_OF_DAYS = 2  # Number of days of simulation
+NUMBER_OF_DAYS = 1  # Number of days of simulation
 BACKUP_REQUEST = False
 POWER_OUT_HOUR = 1  # Hour of day when grid supply goes off
 POWER_ON_HOUR = 23  # Hour of day when grid supply comes back on
 
 PV_PMPP = 0
 total_loadshape = []
+BATTERY_KW_RATED = 60
 
 def start():
     global TEXT, ENG, CIRCUIT, SOLUTION, ACTIVE_ELEMENT
@@ -40,7 +41,7 @@ def solution_iteration():
     
     total_loadshape = get_total_loadshape()
     TEXT.Command = f"New Loadshape.BatteryShape npts=1440 minterval=1 mult={total_loadshape}"
-    TEXT.Command = "New Storage.Battery phases=3 bus1=BackupBus kV=.416 kwrated=100 kwhrated=400 pf=.95 daily=BatteryShape"
+    TEXT.Command = f"New Storage.Battery phases=3 bus1=BackupBus kV=.416 kwrated={BATTERY_KW_RATED} kwhrated=400 pf=.95 daily=BatteryShape"
     
     TEXT.Command = "set mode = yearly"
     TEXT.Command = "set Year = 1"
@@ -54,6 +55,8 @@ def solution_iteration():
     pv_name = "PVSystem.PV"
     CIRCUIT.SetActiveElement(pv_name)
     PV_PMPP = int(ACTIVE_ELEMENT.Properties('Pmpp').Val)
+    max_demand = 0
+    min_demand = 400
     
     while(present_step < num_pts):
         grid_response = grid_supply_control(present_step)
@@ -67,7 +70,9 @@ def solution_iteration():
         
         battery_response = battery_control(present_step, pv_power)
         
-        price_mult = price_multiplier(pv_response, pv_power, battery_response)
+        present_load_demand = total_loadshape[present_step % 1440] * 100
+        
+        price_mult = price_multiplier(pv_response, pv_power, present_load_demand)
         
         SOLUTION.Solve()
         
@@ -82,11 +87,14 @@ def solution_iteration():
         hour = (present_step//60) % 24
         minute = present_step % 60
         
-        present_load_demand = total_loadshape[present_step % 1440] * 100
+        if max_demand < present_load_demand:
+            max_demand = present_load_demand
+        if min_demand > present_load_demand:
+            min_demand = present_load_demand
         
-        print("+----------------------------------")
+        print("+------------------------------------------")
         print(f"| Day {day}, {hour:02d}:{minute:02d}")
-        print("+----------------------------------")
+        print("+------------------------------------------")
         print(f"| Grid supply: {grid_response}")
         print(f"| Backup supply: {pv_response}\n|")
         
@@ -98,12 +106,16 @@ def solution_iteration():
         print(f"| Battery power: {battery_power} kW\n|")
         
         print(f"| Total load demand: {present_load_demand} kW")
-        print("+----------------------------------")
+        print(f"| Price multiplier: {price_mult}")
+        print("+------------------------------------------")
         print()
         
         present_step += 1
         
     print("Done!")
+    print()
+    print(f"Maximum demand: {max_demand} kW")
+    print(f"Minimum demand: {min_demand} kW")
 
 
 def get_loadshapes():    
@@ -182,24 +194,22 @@ def grid_supply_control(present_step):
         return "POWER ON"
     
     
-def price_multiplier(pv_response, pv_power, battery_response):
+def price_multiplier(pv_response, pv_power, present_load_demand):
     
-    total_demand = 0
-    total_demand_min = 0
-    battery_max = 0 #maximum power battery can supply
+    total_demand_min = 3 # this is the minimum demand of the system at any time = demand of base load
     price_mult = 0
     
     if pv_response == "BACKUP ONLINE":
-        if pv_power == total_demand:
+        if pv_power == present_load_demand:
             price_mult = 1
-        elif pv_power > total_demand:
-            price_mult = pv_power / total_demand
+        elif pv_power > present_load_demand:
+            price_mult = pv_power / present_load_demand
         else:
             alpha_min = total_demand_min / PV_PMPP
-            beta = total_demand / battery_max
+            beta = present_load_demand / BATTERY_KW_RATED
             price_mult = (1 / alpha_min) + beta
     else:
-        price_mult = 1 # or whatever disco charges
+        price_mult = -1 # represents that the price should be whatever disco charges
     
     return price_mult
 

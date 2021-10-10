@@ -10,7 +10,7 @@ New Loadshape.MyIrrad npts=24 interval=1 mult=[0 0 0 0 0 0 .1 .2 .3 .5 .8 .9 1.0
 // Temperature values
 New Tshape.MyTemp npts=24 interval=1 temp=[25 25 25 25 25 25 25 25 35 40 45 50 60 60 55 40 35 30 25 25 25 25 25 25]
 
-New PVSystem.PV phases=3 kV=.416 kVA=400 Pmpp=400 bus1=BackupBus irrad=1
+New PVSystem.PV phases=3 kV=.416 kVA=200 Pmpp=200 bus1=BackupBus irrad=1
 ~ temperature=25 P-TCurve=MyPvsT effcurve=MyEff PF=.95
 ~ Daily=MyIrrad TDaily=MyTemp
 
