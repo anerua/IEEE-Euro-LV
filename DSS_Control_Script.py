@@ -18,12 +18,12 @@ ENG = 0  # DSS COM Engine
 
 NUMBER_OF_DAYS = 1  # Number of days of simulation
 BACKUP_REQUEST = False
-POWER_OUT_HOUR = 1  # Hour of day when grid supply goes off
-POWER_ON_HOUR = 23  # Hour of day when grid supply comes back on
+POWER_OUT_HOUR = 6  # Hour of day when grid supply goes off
+POWER_ON_HOUR = 12  # Hour of day when grid supply comes back on
 
 PV_PMPP = 0
 total_loadshape = []
-BATTERY_KW_RATED = 60
+BATTERY_KW_RATED = 70
 
 def start():
     global TEXT, ENG, CIRCUIT, SOLUTION, ACTIVE_ELEMENT
@@ -57,6 +57,8 @@ def solution_iteration():
     PV_PMPP = int(ACTIVE_ELEMENT.Properties('Pmpp').Val)
     max_demand = 0
     min_demand = 400
+    max_time = "00:00"
+    min_time = "00:00"
     
     while(present_step < num_pts):
         grid_response = grid_supply_control(present_step)
@@ -89,8 +91,10 @@ def solution_iteration():
         
         if max_demand < present_load_demand:
             max_demand = present_load_demand
+            max_time = f"{hour:02d}:{minute:02d}"
         if min_demand > present_load_demand:
             min_demand = present_load_demand
+            min_time = f"{hour:02d}:{minute:02d}"
         
         print("+------------------------------------------")
         print(f"| Day {day}, {hour:02d}:{minute:02d}")
@@ -114,8 +118,8 @@ def solution_iteration():
         
     print("Done!")
     print()
-    print(f"Maximum demand: {max_demand} kW")
-    print(f"Minimum demand: {min_demand} kW")
+    print(f"Maximum demand: {max_demand} kW at {max_time}")
+    print(f"Minimum demand: {min_demand} kW at {min_time}")
 
 
 def get_loadshapes():    
@@ -142,7 +146,7 @@ def battery_control(present_step, pv_power):
     
     present_load_demand = total_loadshape[present_step % 1440] * 100
         
-    if ((not BACKUP_REQUEST) and pv_power > 100) or (BACKUP_REQUEST and pv_power > (100 + present_load_demand)):
+    if ((not BACKUP_REQUEST) and pv_power > BATTERY_KW_RATED) or (BACKUP_REQUEST and pv_power > (BATTERY_KW_RATED + present_load_demand)):
         ACTIVE_ELEMENT.Properties('DispMode').Val = "EXTERNAL"
         ACTIVE_ELEMENT.Properties('state').Val = 'CHARGING'
     elif BACKUP_REQUEST and (pv_power < present_load_demand):
