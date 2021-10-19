@@ -17,14 +17,15 @@ class Data_Generator:
         self.length = length
         self.start_time = start_time
         self.end_time = end_time
-        self.data = pd.DataFrame(columns=['Day', 'Time', 'Disco', 'Backup', 'PV(kW)', 'Battery_state', 'Battery_percent', 'Total_load_demand', 'Price_multiplier'])
+        self.data = pd.DataFrame(columns=['Day', 'Hour', 'Minute', 'Disco', 'Backup', 'PV(kW)', 'Battery_state', 'Battery_percent', 'Total_load_demand', 'Price_multiplier'])
 
     
     def add_entry(self, entry):
         
         self.data.append({
             'Day': entry['day'],
-            'Time': entry['time'],
+            'Hour': entry['hour'],
+            'Minute': entry['minute'],
             'Disco': entry['disco'],
             'Backup': entry['backup'],
             'PV(kW)': entry['pv'],
@@ -36,4 +37,7 @@ class Data_Generator:
 
     
     def save_data(self):
-        self.data.to_csv("test.csv")
+        try:
+            self.data.to_csv("test.csv")
+        except:
+            print("Could not save file for some reason!")

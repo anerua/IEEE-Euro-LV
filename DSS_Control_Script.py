@@ -7,6 +7,7 @@ Created on Tue Jul 27 07:29:05 2021
 """
 
 import dss
+from Data_Generator import Data_Generator
 
 
 BASE = '/mnt/6840331B4032F004/Users/MARTINS/Documents/Texts/Acad/OAU/Part 5/Rain Semester/EEE502 - Final Year Project II/Work/IEEE Euro LV/Master_Control.dss'
@@ -18,8 +19,9 @@ ENG = 0  # DSS COM Engine
 
 NUMBER_OF_DAYS = 1  # Number of days of simulation
 BACKUP_REQUEST = False
-POWER_OUT_HOUR = 6  # Hour of day when grid supply goes off
-POWER_ON_HOUR = 12  # Hour of day when grid supply comes back on
+BACKUP_DURATION = 6
+POWER_OUT_HOUR = 0  # Hour of day when grid supply goes off
+POWER_ON_HOUR = 6  # Hour of day when grid supply comes back on
 
 PV_PMPP = 0
 total_loadshape = []
@@ -59,6 +61,9 @@ def solution_iteration():
     min_demand = 400
     max_time = "00:00"
     min_time = "00:00"
+
+    gen_data = Data_Generator(BACKUP_DURATION, POWER_OUT_HOUR, POWER_ON_HOUR)
+
     
     while(present_step < num_pts):
         grid_response = grid_supply_control(present_step)
@@ -95,6 +100,21 @@ def solution_iteration():
         if min_demand > present_load_demand:
             min_demand = present_load_demand
             min_time = f"{hour:02d}:{minute:02d}"
+
+        entry = {
+            'day': day,
+            'hour': f"{hour:02d}",
+            'minute': f"{minute:02d}",
+            'disco': grid_response,
+            'backup': pv_response,
+            'pv': pv_power,
+            'bat_state': battery_response,
+            'bat_percent': battery_stored,
+            'total_load_demand': present_load_demand,
+            'price_mult': price_mult
+        }
+
+        gen_data.add_entry(entry)
         
         print("+------------------------------------------")
         print(f"| Day {day}, {hour:02d}:{minute:02d}")
@@ -116,6 +136,7 @@ def solution_iteration():
         
         present_step += 1
         
+    gen_data.save_data()
     print("Done!")
     print()
     print(f"Maximum demand: {max_demand} kW at {max_time}")
