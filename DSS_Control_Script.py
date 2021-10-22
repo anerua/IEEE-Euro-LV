@@ -17,9 +17,9 @@ ACTIVE_ELEMENT = 0
 TEXT = 0  # Text command
 ENG = 0  # DSS COM Engine
 
-NUMBER_OF_DAYS = 1  # Number of days of simulation
+NUMBER_OF_DAYS = 7  # Number of days of simulation
 BACKUP_REQUEST = False
-POWER_OUT_HOUR = 0  # Hour of day when grid supply goes off
+POWER_OUT_HOUR = 12  # Hour of day when grid supply goes off
 POWER_ON_HOUR = 6  # Hour of day when grid supply comes back on
 
 PV_PMPP = 0
