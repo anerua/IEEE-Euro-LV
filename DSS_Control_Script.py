@@ -19,7 +19,6 @@ ENG = 0  # DSS COM Engine
 
 NUMBER_OF_DAYS = 1  # Number of days of simulation
 BACKUP_REQUEST = False
-BACKUP_DURATION = 6
 POWER_OUT_HOUR = 0  # Hour of day when grid supply goes off
 POWER_ON_HOUR = 6  # Hour of day when grid supply comes back on
 
@@ -62,7 +61,7 @@ def solution_iteration():
     max_time = "00:00"
     min_time = "00:00"
 
-    gen_data = Data_Generator(BACKUP_DURATION, POWER_OUT_HOUR, POWER_ON_HOUR)
+    gen_data = Data_Generator(POWER_OUT_HOUR, POWER_ON_HOUR)
 
     
     while(present_step < num_pts):
