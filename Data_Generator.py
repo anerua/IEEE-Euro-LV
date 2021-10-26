@@ -12,10 +12,11 @@ import pandas as pd
 
 class Data_Generator:
 
-    def __init__(self, start_time, end_time) -> None:
+    def __init__(self, start_time, end_time, simulation_length) -> None:
         
         self.start_time = start_time
         self.end_time = end_time
+        self.simulation_length = simulation_length
         if self.end_time > self.start_time:
             self.duration = self.end_time - self.start_time
         else:
@@ -42,6 +43,6 @@ class Data_Generator:
     def save_data(self):
         try:
             print(self.data.head())
-            self.data.to_csv(f"Simulation results/{self.duration}hr_periods/{self.start_time}-{self.end_time}.csv")
-        except:
-            print("Could not save file for some reason!")
+            self.data.to_csv(f"Simulation results/{self.simulation_length}_day_simulations/{self.duration}hr_periods/{self.start_time}-{self.end_time}.csv")
+        except Exception as e:
+            print(f"Could not save file: {str(e)}")

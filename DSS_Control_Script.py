@@ -17,10 +17,10 @@ ACTIVE_ELEMENT = 0
 TEXT = 0  # Text command
 ENG = 0  # DSS COM Engine
 
-NUMBER_OF_DAYS = 7  # Number of days of simulation
+NUMBER_OF_DAYS = 0  # Number of days of simulation
 BACKUP_REQUEST = False
-POWER_OUT_HOUR = 12  # Hour of day when grid supply goes off
-POWER_ON_HOUR = 6  # Hour of day when grid supply comes back on
+POWER_OUT_HOUR = 0  # Hour of day when grid supply goes off
+POWER_ON_HOUR = 0  # Hour of day when grid supply comes back on
 
 PV_PMPP = 0
 total_loadshape = []
@@ -61,7 +61,7 @@ def solution_iteration():
     max_time = "00:00"
     min_time = "00:00"
 
-    gen_data = Data_Generator(POWER_OUT_HOUR, POWER_ON_HOUR)
+    gen_data = Data_Generator(POWER_OUT_HOUR, POWER_ON_HOUR, NUMBER_OF_DAYS)
 
     
     while(present_step < num_pts):
@@ -137,9 +137,10 @@ def solution_iteration():
         
     gen_data.save_data()
     print("Done!")
+    print("===========================================")
     print()
-    print(f"Maximum demand: {max_demand} kW at {max_time}")
-    print(f"Minimum demand: {min_demand} kW at {min_time}")
+    # print(f"Maximum demand: {max_demand} kW at {max_time}")
+    # print(f"Minimum demand: {min_demand} kW at {min_time}")
 
 
 def get_loadshapes():    
@@ -237,28 +238,25 @@ def price_multiplier(pv_response, pv_power, present_load_demand):
     
     return price_mult
 
+
+if __name__=='__main__':
     
-start()
-solution_iteration()
+    simulation_lengths = (1, 7, 30) # 1 day, 1 week and 1 month simulation periods
+    periods = [(0,6), (6,12), (12,18), (18,0), (0,12), (12,0), (6,18), (18,6), (0,18), (18,12), (12,6), (6,0)]
+    for simulation_length in simulation_lengths:
+        print("===========================================")
+        print(f"{simulation_length}-day simulations")
+        print("===========================================")
+        print()
+        for period in periods:
+            NUMBER_OF_DAYS = simulation_length
+            POWER_OUT_HOUR, POWER_ON_HOUR = period
+            start()
+            solution_iteration()
+        
+        print("===========================================")
+        print("===========================================")
+        print()
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    print("Finally done at last!")
+
