@@ -37,7 +37,7 @@ def start():
     TEXT.Command = "compile '" + BASE + "'"
     ENG.AllowForms = False      # suppresses message forms from popping up during the execution of the user’s program
     
-def solution_iteration():
+def solution_iteration(verbose=False):
     global PV_PMPP, total_loadshape
     
     total_loadshape = get_total_loadshape()
@@ -115,30 +115,33 @@ def solution_iteration():
 
         gen_data.add_entry(entry)
         
-        print("+------------------------------------------")
-        print(f"| Day {day}, {hour:02d}:{minute:02d}")
-        print("+------------------------------------------")
-        print(f"| Grid supply: {grid_response}")
-        print(f"| Backup supply: {pv_response}\n|")
-        
-        print(f"| PV output: {pv_power}\n|")
-        
-        print(f"| Battery state: {battery_response}")
-        print(f"| Battery percent: {battery_stored} %")
-        print(f"| Battery energy left: {battery_kWh} kWh")
-        print(f"| Battery power: {battery_power} kW\n|")
-        
-        print(f"| Total load demand: {present_load_demand} kW")
-        print(f"| Price multiplier: {price_mult}")
-        print("+------------------------------------------")
-        print()
+        if verbose:
+            print("+------------------------------------------")
+            print(f"| Day {day}, {hour:02d}:{minute:02d}")
+            print("+------------------------------------------")
+            print(f"| Grid supply: {grid_response}")
+            print(f"| Backup supply: {pv_response}\n|")
+            
+            print(f"| PV output: {pv_power}\n|")
+            
+            print(f"| Battery state: {battery_response}")
+            print(f"| Battery percent: {battery_stored} %")
+            print(f"| Battery energy left: {battery_kWh} kWh")
+            print(f"| Battery power: {battery_power} kW\n|")
+            
+            print(f"| Total load demand: {present_load_demand} kW")
+            print(f"| Price multiplier: {price_mult}")
+            print("+------------------------------------------")
+            print()
         
         present_step += 1
         
     gen_data.save_data()
-    print("Done!")
-    print("===========================================")
-    print()
+    
+    if verbose:
+        print("Done!")
+        print("===========================================")
+        print()
     # print(f"Maximum demand: {max_demand} kW at {max_time}")
     # print(f"Minimum demand: {min_demand} kW at {min_time}")
 
@@ -249,10 +252,12 @@ if __name__=='__main__':
         print("===========================================")
         print()
         for period in periods:
+            print(f"Running {period[0]} - {period[1]} ...")
             NUMBER_OF_DAYS = simulation_length
             POWER_OUT_HOUR, POWER_ON_HOUR = period
             start()
             solution_iteration()
+            print("Done")
         
         print("===========================================")
         print("===========================================")
