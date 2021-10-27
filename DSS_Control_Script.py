@@ -252,16 +252,16 @@ if __name__=='__main__':
         print("===========================================")
         print()
         for period in periods:
-            print(f"Running {period[0]} - {period[1]} ...")
+            print(f"Running {period[0]} - {period[1]} ...", flush=True)
             NUMBER_OF_DAYS = simulation_length
             POWER_OUT_HOUR, POWER_ON_HOUR = period
             start()
             solution_iteration()
-            print("Done")
+            print("Done", flush=True)
         
         print("===========================================")
         print("===========================================")
-        print()
+        print(flush=True)
     
     print("Finally done at last!")
 

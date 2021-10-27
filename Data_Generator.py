@@ -42,7 +42,6 @@ class Data_Generator:
     
     def save_data(self):
         try:
-            print(self.data.head())
             self.data.to_csv(f"Simulation results/{self.simulation_length}_day_simulations/{self.duration}hr_periods/{self.start_time}-{self.end_time}.csv")
         except Exception as e:
             print(f"Could not save file: {str(e)}")
