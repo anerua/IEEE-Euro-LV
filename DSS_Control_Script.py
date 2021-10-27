@@ -61,6 +61,11 @@ def solution_iteration(verbose=False):
     max_time = "00:00"
     min_time = "00:00"
 
+    max_demand_battery = 0
+    min_demand_battery = 400
+    max_time_battery = "00:00"
+    min_time_battery = "00:00"
+
     gen_data = Data_Generator(POWER_OUT_HOUR, POWER_ON_HOUR, NUMBER_OF_DAYS)
 
     
@@ -92,8 +97,23 @@ def solution_iteration(verbose=False):
         day = ((present_step//60)//24) + 1
         hour = (present_step//60) % 24
         minute = present_step % 60
+
+        backup_hours = []
+        if POWER_OUT_HOUR < POWER_ON_HOUR:
+            backup_hours = list(range(POWER_OUT_HOUR, POWER_ON_HOUR, 1))
+        else:
+            backup_hours = list(range(0, POWER_ON_HOUR, 1)) + list(range(POWER_OUT_HOUR, 24, 1))
         
-        if max_demand < present_load_demand:
+        if (max_demand < present_load_demand) and (hour in backup_hours):
+            max_demand = present_load_demand
+            max_time = f"{hour:02d}:{minute:02d}"
+        if (min_demand > present_load_demand) and (hour in backup_hours):
+            min_demand = present_load_demand
+            min_time = f"{hour:02d}:{minute:02d}"
+
+
+
+        if max_demand_battery < present_load_demand:
             max_demand = present_load_demand
             max_time = f"{hour:02d}:{minute:02d}"
         if min_demand > present_load_demand:
@@ -142,8 +162,8 @@ def solution_iteration(verbose=False):
         print("Done!")
         print("===========================================")
         print()
-    # print(f"Maximum demand: {max_demand} kW at {max_time}")
-    # print(f"Minimum demand: {min_demand} kW at {min_time}")
+    print(f"Maximum demand: {max_demand} kW at {max_time}")
+    print(f"Minimum demand: {min_demand} kW at {min_time}")
 
 
 def get_loadshapes():    
