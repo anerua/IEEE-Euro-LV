@@ -81,7 +81,7 @@ def solution_iteration(verbose=False):
         
         battery_response = battery_control(present_step, pv_power)
         
-        present_load_demand = total_loadshape[present_step % 1440] * 100
+        present_load_demand = total_loadshape[present_step % 1440]
         
         price_mult = price_multiplier(pv_response, pv_power, present_load_demand)
         
@@ -143,7 +143,7 @@ def solution_iteration(verbose=False):
             print(f"| Total load demand: {present_load_demand} kW")
             print(f"| Price multiplier: {price_mult}")
             print("+------------------------------------------")
-            print()
+            print(flush=True)
         
         present_step += 1
         
@@ -155,23 +155,20 @@ def solution_iteration(verbose=False):
         print()
     print(f"Maximum demand: {max_demand} kW at {max_time}")
     print(f"Minimum demand: {min_demand} kW at {min_time}")
+    
 
 
-def get_loadshapes():    
+def get_total_loadshape():
     loadshapes = CIRCUIT.LoadShapes
     loadshapes_dict = {}
     for i in range(1,56):
         shape_name = f"Shape_{i}"
         loadshapes.Name = shape_name
         loadshapes_dict[shape_name] = loadshapes.Pmult
-    return loadshapes_dict
 
-
-def get_total_loadshape():
-    loadshapes_dict = get_loadshapes()
     total_loadshape = []
     for i in range(1440):
-        total = sum((loadshapes_dict[shape][i] / 100) for shape in loadshapes_dict)
+        total = sum((loadshapes_dict[shape][i]) for shape in loadshapes_dict)
         total_loadshape.append(total)
     return total_loadshape.copy()
     
@@ -267,7 +264,7 @@ if __name__=='__main__':
             NUMBER_OF_DAYS = simulation_length
             POWER_OUT_HOUR, POWER_ON_HOUR = period
             start()
-            solution_iteration()
+            solution_iteration(verbose=True)
             print("Done", flush=True)
         
         print("===========================================")

@@ -20,7 +20,7 @@ def get_total_loadshape():
 
     total_loadshape = []
     for i in range(1440):
-        total = sum((loadshapes_dict[shape][i] / 100) for shape in loadshapes_dict)
+        total = sum((loadshapes_dict[shape][i]) for shape in loadshapes_dict)
         total_loadshape.append(total)
 
     return total_loadshape.copy()
