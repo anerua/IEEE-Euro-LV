@@ -111,15 +111,6 @@ def solution_iteration(verbose=False):
             min_demand = present_load_demand
             min_time = f"{hour:02d}:{minute:02d}"
 
-
-
-        if max_demand_battery < present_load_demand:
-            max_demand = present_load_demand
-            max_time = f"{hour:02d}:{minute:02d}"
-        if min_demand > present_load_demand:
-            min_demand = present_load_demand
-            min_time = f"{hour:02d}:{minute:02d}"
-
         entry = {
             'day': day,
             'hour': f"{hour:02d}",
