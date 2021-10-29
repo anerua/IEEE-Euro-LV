@@ -1,4 +1,5 @@
 import dss
+import pandas as pd
 
 
 def get_total_loadshape():
@@ -31,10 +32,14 @@ if __name__ == '__main__':
     total_loadshape = get_total_loadshape()
     total_energyuse_shape = list((kw / 60) for kw in total_loadshape)
 
+    data = pd.DataFrame(columns=['Start hour', 'End hour', 'Total energy demand (kWh)', 'Required battery size (kWh)'])
+
     periods = [(0,6), (6,12), (12,18), (18,0), (0,12), (12,0), (6,18), (18,6), (0,18), (18,12), (12,6), (6,0)]
     for period in periods:
-        print("----------------------------")
+        print("--------------------------------------")
         print(f"Running {period[0]} - {period[1]} ...", flush=True)
+        print("--------------------------------------")
+
         POWER_OUT_HOUR, POWER_ON_HOUR = period
 
         backup_hours = []
@@ -50,7 +55,23 @@ if __name__ == '__main__':
                 valid_energy.append(total_energyuse_shape[step])
         
         total_energy = sum(valid_energy)
-        print(f"Total energy: {total_energy} kWh")
+        battery_size = 4 * total_energy
 
-        print("----------------------------", flush=True)
+        data = data.append({
+            'Start hour': POWER_OUT_HOUR,
+            'End hour': POWER_ON_HOUR,
+            'Total energy demand (kWh)': total_energy,
+            'Required battery size (kWh)': battery_size
+        }, ignore_index=True)
+
+        print(f"Total energy: {total_energy} kWh")
+        print(f"Battery energy: {battery_size} kWh")
+
+        print("--------------------------------------\n", flush=True)
+    
+    try:
+        data.to_csv(f"Simulation results/battery_sizing.csv")
+    except Exception as e:
+        print(f"Could not save file: {str(e)}")
+        
     print("Done!")
