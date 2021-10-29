@@ -25,7 +25,7 @@ POWER_ON_HOUR = 0  # Hour of day when grid supply comes back on
 
 PV_PMPP = 0
 total_loadshape = []
-BATTERY_KW_RATED = 70
+BATTERY_KW_RATED = 0
 BATTERY_KWH_RATED = 0
 
 def start():
@@ -57,16 +57,15 @@ def solution_iteration(verbose=False):
     
     pv_name = "PVSystem.PV"
     CIRCUIT.SetActiveElement(pv_name)
-    PV_PMPP = int(ACTIVE_ELEMENT.Properties('Pmpp').Val)
+    ACTIVE_ELEMENT.Properties('Pmpp').Val = PV_PMPP
+    ACTIVE_ELEMENT.Properties('kVA').Val = PV_PMPP
+
+    # PV_PMPP = int(ACTIVE_ELEMENT.Properties('Pmpp').Val)
+
     max_demand = 0
     min_demand = 400
     max_time = "00:00"
     min_time = "00:00"
-
-    max_demand_battery = 0
-    min_demand_battery = 400
-    max_time_battery = "00:00"
-    min_time_battery = "00:00"
 
     gen_data = Data_Generator(POWER_OUT_HOUR, POWER_ON_HOUR, NUMBER_OF_DAYS)
 
@@ -269,7 +268,8 @@ if __name__=='__main__':
             print(f"Running {period[0]} - {period[1]} ...", flush=True)
             NUMBER_OF_DAYS = simulation_length
             POWER_OUT_HOUR, POWER_ON_HOUR = period
-            BATTERY_KWH_RATED = battery_sizes[f"{POWER_OUT_HOUR}-{POWER_ON_HOUR}"]
+            BATTERY_KW_RATED = battery_sizes[f"{POWER_OUT_HOUR}-{POWER_ON_HOUR}"]['kW']
+            BATTERY_KWH_RATED = battery_sizes[f"{POWER_OUT_HOUR}-{POWER_ON_HOUR}"]['kWh']
 
             start()
             solution_iteration(verbose=True)
