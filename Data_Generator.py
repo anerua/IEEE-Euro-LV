@@ -21,7 +21,7 @@ class Data_Generator:
             self.duration = self.end_time - self.start_time
         else:
             self.duration = (self.end_time + 24) - self.start_time
-        self.data = pd.DataFrame(columns=['Day', 'Hour', 'Minute', 'Disco', 'Backup', 'PV(kW)', 'Battery_state', 'Battery_percent', 'Total_load_demand(kW)', 'Price_multiplier'])
+        self.data = pd.DataFrame(columns=['Day', 'Hour', 'Minute', 'Disco', 'Backup', 'PV(kW)', 'Battery_state', 'Battery_percent', 'Total_load_demand(kW)', 'Price_multiplier', 'Additional_charge_multiplier'])
 
     
     def add_entry(self, entry):
@@ -36,7 +36,8 @@ class Data_Generator:
             'Battery_state': entry['bat_state'],
             'Battery_percent': entry['bat_percent'],
             'Total_load_demand(kW)': entry['total_load_demand'],
-            'Price_multiplier': entry['price_mult']
+            'Price_multiplier': entry['price_mult'],
+            'Additional_charge_multiplier': entry['add_mult']
         }, ignore_index=True)
 
     

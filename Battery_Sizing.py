@@ -50,26 +50,34 @@ class BatterySizing:
                 backup_hours = list(range(0, POWER_ON_HOUR, 1)) + list(range(POWER_OUT_HOUR, 24, 1))
 
             valid_energy = []
+            battery_rated_kw = 0
             for step in range(1440):
                 hour = (step//60) % 24
                 if hour in backup_hours:
+                    if total_loadshape[step] > battery_rated_kw:
+                        battery_rated_kw = total_loadshape[step]
                     valid_energy.append(total_energyuse_shape[step])
             
             total_energy = sum(valid_energy)
-            battery_size = 4 * total_energy
-            
-            self.battery_sizes[f"{POWER_OUT_HOUR}-{POWER_ON_HOUR}"] = battery_size
+            battery_rated_kwh = 4 * total_energy
 
+            battery_params = {
+                'kW': battery_rated_kw * 1.25,
+                'kWh': battery_rated_kwh
+            }
+            
+            self.battery_sizes[f"{POWER_OUT_HOUR}-{POWER_ON_HOUR}"] = battery_params
     
     def save_battery_sizes(self):
-        data = pd.DataFrame(columns=['Start hour', 'End hour', 'Required battery size (kWh)'])
+        data = pd.DataFrame(columns=['Start hour', 'End hour', 'Required battery power (kW)', 'Required battery energy (kWh)'])
         battery_sizes = self.get_battery_sizes()
         for period in battery_sizes:
             start, end = period.split("-")
             data = data.append({
                 'Start hour': start,
                 'End hour': end,
-                'Required battery size (kWh)': battery_sizes[period]
+                'Required battery power (kW)': battery_sizes[period]['kW'],
+                'Required battery energy (kWh)': battery_sizes[period]['kWh']
             }, ignore_index=True)
         try:
             data.to_csv(f"Simulation results/battery_sizing.csv")
@@ -97,5 +105,7 @@ if __name__ == '__main__':
     for period in battery_sizes:
         start, end = period.split("-")
         print("+----------------------------------------")
-        print(f"| {start} - {end}: {battery_sizes[period]} kWh")
+        print(f"| {start} - {end}")
+        print(f"| Battery rated power: {battery_sizes[period]['kW']} kW")
+        print(f"| Battery rated energy: {battery_sizes[period]['kWh']} kWh")
         print("+----------------------------------------\n")

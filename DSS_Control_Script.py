@@ -8,6 +8,7 @@ Created on Tue Jul 27 07:29:05 2021
 
 import dss
 from Data_Generator import Data_Generator
+from Battery_Sizing import BatterySizing
 
 
 BASE = '/mnt/6840331B4032F004/Users/MARTINS/Documents/Texts/Acad/OAU/Part 5/Rain Semester/EEE502 - Final Year Project II/Work/IEEE Euro LV/Master_Control.dss'
@@ -25,6 +26,7 @@ POWER_ON_HOUR = 0  # Hour of day when grid supply comes back on
 PV_PMPP = 0
 total_loadshape = []
 BATTERY_KW_RATED = 70
+BATTERY_KWH_RATED = 0
 
 def start():
     global TEXT, ENG, CIRCUIT, SOLUTION, ACTIVE_ELEMENT
@@ -42,7 +44,7 @@ def solution_iteration(verbose=False):
     
     total_loadshape = get_total_loadshape()
     TEXT.Command = f"New Loadshape.BatteryShape npts=1440 minterval=1 mult={total_loadshape}"
-    TEXT.Command = f"New Storage.Battery phases=3 bus1=BackupBus kV=.416 kwrated={BATTERY_KW_RATED} kwhrated=400 pf=.95 daily=BatteryShape"
+    TEXT.Command = f"New Storage.Battery phases=3 bus1=BackupBus kV=.416 kwrated={BATTERY_KW_RATED} kwhrated={BATTERY_KWH_RATED} pf=.95 daily=BatteryShape"
     
     TEXT.Command = "set mode = yearly"
     TEXT.Command = "set Year = 1"
@@ -83,7 +85,7 @@ def solution_iteration(verbose=False):
         
         present_load_demand = total_loadshape[present_step % 1440]
         
-        price_mult = price_multiplier(pv_response, pv_power, present_load_demand)
+        price_mult, add_mult = price_multiplier(pv_response, pv_power, present_load_demand)
         
         SOLUTION.Solve()
         
@@ -121,7 +123,8 @@ def solution_iteration(verbose=False):
             'bat_state': battery_response,
             'bat_percent': battery_stored,
             'total_load_demand': present_load_demand,
-            'price_mult': price_mult
+            'price_mult': price_mult,
+            'add_mult': add_mult
         }
 
         gen_data.add_entry(entry)
@@ -142,6 +145,7 @@ def solution_iteration(verbose=False):
             
             print(f"| Total load demand: {present_load_demand} kW")
             print(f"| Price multiplier: {price_mult}")
+            print(f"| Additional charge multiplier: {add_mult}")
             print("+------------------------------------------")
             print(flush=True)
         
@@ -232,28 +236,30 @@ def grid_supply_control(present_step):
     
 def price_multiplier(pv_response, pv_power, present_load_demand):
     
-    total_demand_min = 3 # this is the minimum demand of the system at any time = demand of base load
-    price_mult = 0
+    price_mult = 0  # price multiplier
+    add_mult = 0    # additional charge multiplier
     
     if pv_response == "BACKUP ONLINE":
-        if pv_power == present_load_demand:
-            price_mult = 1
-        elif pv_power > present_load_demand:
+        if pv_power >= present_load_demand:
             price_mult = pv_power / present_load_demand
         else:
-            alpha_min = total_demand_min / PV_PMPP
-            beta = present_load_demand / BATTERY_KW_RATED
-            price_mult = (1 / alpha_min) + beta
+            price_mult = present_load_demand / BATTERY_KW_RATED
+            add_mult = 1
     else:
         price_mult = -1 # represents that the price should be whatever disco charges
     
-    return price_mult
+    return price_mult, add_mult
 
 
 if __name__=='__main__':
     
     simulation_lengths = (1, 7, 30) # 1 day, 1 week and 1 month simulation periods
     periods = [(0,6), (6,12), (12,18), (18,0), (0,12), (12,0), (6,18), (18,6), (0,18), (18,12), (12,6), (6,0)]
+
+    bs = BatterySizing(periods)
+    bs.size_battery()
+    battery_sizes = bs.get_battery_sizes()
+
     for simulation_length in simulation_lengths:
         print("===========================================")
         print(f"{simulation_length}-day simulations")
@@ -263,6 +269,8 @@ if __name__=='__main__':
             print(f"Running {period[0]} - {period[1]} ...", flush=True)
             NUMBER_OF_DAYS = simulation_length
             POWER_OUT_HOUR, POWER_ON_HOUR = period
+            BATTERY_KWH_RATED = battery_sizes[f"{POWER_OUT_HOUR}-{POWER_ON_HOUR}"]
+
             start()
             solution_iteration(verbose=True)
             print("Done", flush=True)
