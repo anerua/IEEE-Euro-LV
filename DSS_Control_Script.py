@@ -19,10 +19,10 @@ ACTIVE_ELEMENT = 0
 TEXT = 0  # Text command
 ENG = 0  # DSS COM Engine
 
-NUMBER_OF_DAYS = 0  # Number of days of simulation
+NUMBER_OF_DAYS = 0  # Number of days of simulation. Set later
 BACKUP_REQUEST = False
-POWER_OUT_HOUR = 0  # Hour of day when grid supply goes off
-POWER_ON_HOUR = 0  # Hour of day when grid supply comes back on
+POWER_OUT_HOUR = 0  # Hour of day when grid supply goes off. Set later
+POWER_ON_HOUR = 0  # Hour of day when grid supply comes back on. Set later
 
 PV_PMPP = 0
 total_loadshape = []
@@ -61,15 +61,7 @@ def solution_iteration(verbose=False):
     ACTIVE_ELEMENT.Properties('Pmpp').Val = PV_PMPP
     ACTIVE_ELEMENT.Properties('kVA').Val = PV_PMPP
 
-    # PV_PMPP = int(ACTIVE_ELEMENT.Properties('Pmpp').Val)
-
-    # max_demand = 0
-    # min_demand = 400
-    # max_time = "00:00"
-    # min_time = "00:00"
-
     gen_data = Data_Generator(POWER_OUT_HOUR, POWER_ON_HOUR, NUMBER_OF_DAYS)
-
     
     while(present_step < num_pts):
         grid_response = grid_supply_control(present_step)
@@ -99,19 +91,6 @@ def solution_iteration(verbose=False):
         day = ((present_step//60)//24) + 1
         hour = (present_step//60) % 24
         minute = present_step % 60
-
-        # backup_hours = []
-        # if POWER_OUT_HOUR < POWER_ON_HOUR:
-        #     backup_hours = list(range(POWER_OUT_HOUR, POWER_ON_HOUR, 1))
-        # else:
-        #     backup_hours = list(range(0, POWER_ON_HOUR, 1)) + list(range(POWER_OUT_HOUR, 24, 1))
-        
-        # if (max_demand < present_load_demand) and (hour in backup_hours):
-        #     max_demand = present_load_demand
-        #     max_time = f"{hour:02d}:{minute:02d}"
-        # if (min_demand > present_load_demand) and (hour in backup_hours):
-        #     min_demand = present_load_demand
-        #     min_time = f"{hour:02d}:{minute:02d}"
 
         entry = {
             'day': day,
@@ -157,9 +136,6 @@ def solution_iteration(verbose=False):
         print("Done!")
         print("===========================================")
         print()
-    # print(f"Maximum demand: {max_demand} kW at {max_time}")
-    # print(f"Minimum demand: {min_demand} kW at {min_time}")
-    
 
 
 def get_total_loadshape():
