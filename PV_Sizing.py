@@ -72,17 +72,19 @@ class PVSizing:
             
             for step in range(1440):
                 hour = (step//60) % 24
-                if (hour in backup_hours) and (self.irrad_curve[hour] > 0):
+                if (hour in backup_hours) and (self.irrad_curve[hour] > 0.1):
                     if total_loadshape[step] > max_demand:
                         max_demand = total_loadshape[step]
                         max_demand_hour = hour
             
             pmpp = 0
             charging_kw = battery_sizes[f"{POWER_OUT_HOUR}-{POWER_ON_HOUR}"]['kW']
-            if max_demand > charging_kw: 
-                pmpp = (max_demand * 1.25) / (self.irrad_curve[max_demand_hour] * self.PT_curve[f"{self.temp_curve[max_demand_hour]}"])
-            else:
+            if max_demand == 0:
                 pmpp = charging_kw * 1.25
+            else:
+                pmpp = (max_demand * 1.25) / (self.irrad_curve[max_demand_hour] * self.PT_curve[f"{self.temp_curve[max_demand_hour]}"])
+                if pmpp < charging_kw * 1.25:
+                    pmpp = charging_kw * 1.25
             self.PV_sizes[f"{POWER_OUT_HOUR}-{POWER_ON_HOUR}"] = pmpp
         
 
@@ -109,10 +111,9 @@ class PVSizing:
 
 if __name__ == '__main__':
 
-    periods = [(0,6), (6,12), (12,18), (18,0), (0,12), (12,0), (6,18), (18,6), (0,18), (18,12), (12,6), (6,0)]
+    periods = [(0,6), (6,12), (12,18), (18,0), (0,12), (12,0), (6,18), (18,6)]
 
     pvs = PVSizing(periods)
-
     pvs.size_PV()
     pvs.save_PV_sizes()
 

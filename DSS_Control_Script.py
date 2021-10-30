@@ -9,6 +9,7 @@ Created on Tue Jul 27 07:29:05 2021
 import dss
 from Data_Generator import Data_Generator
 from Battery_Sizing import BatterySizing
+from PV_Sizing import PVSizing
 
 
 BASE = '/mnt/6840331B4032F004/Users/MARTINS/Documents/Texts/Acad/OAU/Part 5/Rain Semester/EEE502 - Final Year Project II/Work/IEEE Euro LV/Master_Control.dss'
@@ -62,10 +63,10 @@ def solution_iteration(verbose=False):
 
     # PV_PMPP = int(ACTIVE_ELEMENT.Properties('Pmpp').Val)
 
-    max_demand = 0
-    min_demand = 400
-    max_time = "00:00"
-    min_time = "00:00"
+    # max_demand = 0
+    # min_demand = 400
+    # max_time = "00:00"
+    # min_time = "00:00"
 
     gen_data = Data_Generator(POWER_OUT_HOUR, POWER_ON_HOUR, NUMBER_OF_DAYS)
 
@@ -99,18 +100,18 @@ def solution_iteration(verbose=False):
         hour = (present_step//60) % 24
         minute = present_step % 60
 
-        backup_hours = []
-        if POWER_OUT_HOUR < POWER_ON_HOUR:
-            backup_hours = list(range(POWER_OUT_HOUR, POWER_ON_HOUR, 1))
-        else:
-            backup_hours = list(range(0, POWER_ON_HOUR, 1)) + list(range(POWER_OUT_HOUR, 24, 1))
+        # backup_hours = []
+        # if POWER_OUT_HOUR < POWER_ON_HOUR:
+        #     backup_hours = list(range(POWER_OUT_HOUR, POWER_ON_HOUR, 1))
+        # else:
+        #     backup_hours = list(range(0, POWER_ON_HOUR, 1)) + list(range(POWER_OUT_HOUR, 24, 1))
         
-        if (max_demand < present_load_demand) and (hour in backup_hours):
-            max_demand = present_load_demand
-            max_time = f"{hour:02d}:{minute:02d}"
-        if (min_demand > present_load_demand) and (hour in backup_hours):
-            min_demand = present_load_demand
-            min_time = f"{hour:02d}:{minute:02d}"
+        # if (max_demand < present_load_demand) and (hour in backup_hours):
+        #     max_demand = present_load_demand
+        #     max_time = f"{hour:02d}:{minute:02d}"
+        # if (min_demand > present_load_demand) and (hour in backup_hours):
+        #     min_demand = present_load_demand
+        #     min_time = f"{hour:02d}:{minute:02d}"
 
         entry = {
             'day': day,
@@ -156,8 +157,8 @@ def solution_iteration(verbose=False):
         print("Done!")
         print("===========================================")
         print()
-    print(f"Maximum demand: {max_demand} kW at {max_time}")
-    print(f"Minimum demand: {min_demand} kW at {min_time}")
+    # print(f"Maximum demand: {max_demand} kW at {max_time}")
+    # print(f"Minimum demand: {min_demand} kW at {min_time}")
     
 
 
@@ -179,14 +180,16 @@ def get_total_loadshape():
 def battery_control(present_step, pv_power):
     CIRCUIT.SetActiveElement("Storage.Battery")
     
-    present_load_demand = total_loadshape[present_step % 1440] * 100
+    present_load_demand = total_loadshape[present_step % 1440]
         
-    if ((not BACKUP_REQUEST) and pv_power > BATTERY_KW_RATED) or (BACKUP_REQUEST and pv_power > (BATTERY_KW_RATED + present_load_demand)):
+    if ((not BACKUP_REQUEST) and pv_power > 0) or (BACKUP_REQUEST and pv_power > (present_load_demand * 1.25)):
         ACTIVE_ELEMENT.Properties('DispMode').Val = "EXTERNAL"
         ACTIVE_ELEMENT.Properties('state').Val = 'CHARGING'
     elif BACKUP_REQUEST and (pv_power < present_load_demand):
-        ACTIVE_ELEMENT.Properties('DispMode').Val = "FOLLOW"
         CIRCUIT.SetActiveElement("Storage.Battery")
+        ACTIVE_ELEMENT.Properties('DispMode').Val = "EXTERNAL"
+        ACTIVE_ELEMENT.Properties('kW').Val = present_load_demand
+        ACTIVE_ELEMENT.Properties('state').Val = 'DISCHARGING'
     else:
         ACTIVE_ELEMENT.Properties('DispMode').Val = "EXTERNAL"
         ACTIVE_ELEMENT.Properties('state').Val = 'IDLING'
@@ -242,22 +245,29 @@ def price_multiplier(pv_response, pv_power, present_load_demand):
         if pv_power >= present_load_demand:
             price_mult = pv_power / present_load_demand
         else:
-            price_mult = present_load_demand / BATTERY_KW_RATED
+            price_mult = BATTERY_KW_RATED / (BATTERY_KW_RATED - present_load_demand)
             add_mult = 1
     else:
-        price_mult = -1 # represents that the price should be whatever disco charges
+        price_mult = 0 # represents that the price should be whatever disco charges
     
     return price_mult, add_mult
 
 
+
 if __name__=='__main__':
     
-    simulation_lengths = (1, 7, 30) # 1 day, 1 week and 1 month simulation periods
-    periods = [(0,6), (6,12), (12,18), (18,0), (0,12), (12,0), (6,18), (18,6), (0,18), (18,12), (12,6), (6,0)]
+    simulation_lengths = (1,) # 1 day, 1 week and 1 month simulation periods
+    # periods = [(0,6), (6,12), (12,18), (18,0), (0,12), (12,0), (6,18), (18,6), (0,18), (18,12), (12,6), (6,0)]
+    periods = [(0,6), (6,12), (12,18), (18,0), (0,12), (12,0), (6,18), (18,6)]
+    # periods = [(6,18)]
 
     bs = BatterySizing(periods)
     bs.size_battery()
     battery_sizes = bs.get_battery_sizes()
+
+    pvs = PVSizing(periods)
+    pvs.size_PV()
+    pv_sizes = pvs.get_PV_sizes()
 
     for simulation_length in simulation_lengths:
         print("===========================================")
@@ -268,11 +278,13 @@ if __name__=='__main__':
             print(f"Running {period[0]} - {period[1]} ...", flush=True)
             NUMBER_OF_DAYS = simulation_length
             POWER_OUT_HOUR, POWER_ON_HOUR = period
+
             BATTERY_KW_RATED = battery_sizes[f"{POWER_OUT_HOUR}-{POWER_ON_HOUR}"]['kW']
             BATTERY_KWH_RATED = battery_sizes[f"{POWER_OUT_HOUR}-{POWER_ON_HOUR}"]['kWh']
+            PV_PMPP = pv_sizes[f"{POWER_OUT_HOUR}-{POWER_ON_HOUR}"]
 
             start()
-            solution_iteration(verbose=True)
+            solution_iteration(verbose=False)
             print("Done", flush=True)
         
         print("===========================================")
